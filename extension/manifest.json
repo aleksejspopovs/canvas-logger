@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Canvas logger",
+  "version": "1.0",
+  "description": "Logs calls to HTMLCanvasElement.toDataURL",
+  "permissions": ["storage", "unlimitedStorage"],
+  "content_scripts": [
+    {
+      "js": ["scripts/content.js"],
+      "matches": ["<all_urls>"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "js": ["scripts/logger.js"],
+      "matches": ["<all_urls>"],
+      "run_at": "document_start"
+    }
+  ],
+  "options_page": "viewer/index.html"
+}
