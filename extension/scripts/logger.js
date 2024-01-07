@@ -13,14 +13,15 @@ window.addEventListener("message", (event) => {
     return;
   }
 
-  if (event.data.type && (event.data.type === 'CANVAS_DATAURL_LOG')) {
+  if (event.data.type && (event.data.type === 'CANVAS_CAPTURE_LOG')) {
+    delete event.data.type
+    
     const uuid = generateUuid()
-    const data = event.data.result
     const url = document.location.href
     const time = new Date().toJSON()
 
     let objects = {}
-    objects[`log_${time}_${uuid}`] = {url, data, time}
+    objects[`log_${time}_${uuid}`] = {url, time, ...event.data}
     chrome.storage.local.set(objects)
 
     console.log(`🎨 LOGGED CANVAS DATA URL ${uuid}`)

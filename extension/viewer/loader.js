@@ -53,7 +53,7 @@ const loadEntries = () => {
           let itemElement = document.createElement('li')
 
           let descElement = document.createElement('p')
-          descElement.innerText = `${item.key} on ${item.url}`
+          descElement.innerText = `${item.key} on ${item.url} (${item.method || 'toDataURL'})`
           itemElement.appendChild(descElement)
 
           if (knownData.hasOwnProperty(item.data)) {
