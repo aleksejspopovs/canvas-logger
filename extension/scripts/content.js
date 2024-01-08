@@ -1,4 +1,8 @@
 (function () {
+    DO_NOT_HOOK_URLS = [
+        'https://www.google.com/maps',
+    ]
+
     function reportCanvasCapture(data, method) {
         console.trace(`🎨 TRACING CANVAS ${method} ACCESS`)
         window.postMessage({
@@ -10,6 +14,10 @@
 
     function patchDocument(doc) {
         doc._HAS_CANVAS_HOOKS = true
+
+        if (DO_NOT_HOOK_URLS.some((prefix) => document.location.href.startsWith(prefix))) {
+            return
+        }
 
         const _HTMLCanvasElement = doc.createElement('canvas').constructor
 
@@ -75,7 +83,6 @@
         stub('webgl2.copyTexImage2D', _WebGL2RenderingContext.prototype, 'copyTexImage2D')
         stub('webgl2.copyTexSubImage2D', _WebGL2RenderingContext.prototype, 'copyTexSubImage2D')
         stub('webgl2.copyTexSubImage2D', _WebGL2RenderingContext.prototype, 'copyTexSubImage2D')
-
     }
 
     patchDocument(document)
