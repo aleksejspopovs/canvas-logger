@@ -3,12 +3,13 @@
         'https://www.google.com/maps',
     ]
 
-    function reportCanvasCapture(data, method) {
+    function reportCanvasCapture(data, method, doc) {
         console.trace(`🎨 TRACING CANVAS ${method} ACCESS`)
         window.postMessage({
             type: 'CANVAS_CAPTURE_LOG',
             data: data,
             method: method,
+            frameUrl: doc.location.href,
         })
     }
 
@@ -24,7 +25,7 @@
         const _CANVAS_DATAURL_ORIGINAL_FUNCTION = _HTMLCanvasElement.prototype.toDataURL
         _HTMLCanvasElement.prototype.toDataURL = function (...args) {
             let result = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(this, args)
-            reportCanvasCapture(result, 'toDataURL')
+            reportCanvasCapture(result, 'toDataURL', doc)
             return result
         }
 
@@ -34,7 +35,7 @@
                 // converting the blob to a data URL
                 let reader = new FileReader()
                 reader.onload = function (event) {
-                    reportCanvasCapture(event.target.result, 'toBlob')
+                    reportCanvasCapture(event.target.result, 'toBlob', doc)
                 }
                 reader.readAsDataURL(blob)
 
@@ -56,9 +57,53 @@
             tmpContext.putImageData(result, 0, 0)
             let dataUrl = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(tmpCanvas, [])
 
-            reportCanvasCapture(dataUrl, `2d.getImageData(${sx}, ${sy}, ${sw}, ${sh})`)
+            reportCanvasCapture(dataUrl, `2d.getImageData(${sx}, ${sy}, ${sw}, ${sh})`, doc)
             return result
         }
+
+        /*
+            The entire reason that we do this doc.createElement('blah').constructor dance
+            instead of acting directly on e.g. HTMLCanvasElement is that that would leave
+            one way for a website to get an unmodified instance of HTMLCanvasElement:
+
+            1. Create an iframe with src=about:blank and sandbox=allow-same-origin
+            2. Because the iframe is sandboxed, no JavaScript runs inside it, including
+               this content script, so the HTMLCanvasElement inside of it is unmodified.
+            3. Because of allow-same-origin, the parent document can grab
+               iframe.contentDocument, which is a reference to the document inside the
+               iframe, and call iframe.contentDocument.createElement('canvas') to get
+               a canvas that's been created inside the iframe.
+
+            (https://browserleaks.com/canvas does exactly this.)
+
+            But two can play at this game! To prevent this, we hook HTMLIFrameElement
+            .contentDocument to grab the contentDocument and re-run the hooking code on
+            it (which is still running inside the parent frame and now using the exact
+            same trick to get a reference to HTMLCanvasElement inside the frame) before
+            returning it.
+
+            Notice that this is recursive! You could have a sandboxed iframe with a
+            sandboxed iframe inside it, but this will still hook the innermost iframe too.
+
+            Hooking HTMLIFrameElement.contentDocument is a little more involved than the
+            stuff we do above because it is a getter, not a simple method.
+        */
+        const _HTMLIFrameElement = doc.createElement('iframe').constructor
+        const _IFRAME_CONTENTDOCUMENT_ORIGINAL_FUNCTION = Object
+            .getOwnPropertyDescriptor(_HTMLIFrameElement.prototype, 'contentDocument')
+            .get
+        Object.defineProperty(_HTMLIFrameElement.prototype, 'contentDocument', {
+            configurable: true,
+            enumerable: true,
+            get() {
+                let contentDoc = _IFRAME_CONTENTDOCUMENT_ORIGINAL_FUNCTION.apply(this)
+                if (!contentDoc._HAS_CANVAS_HOOKS) {
+                    patchDocument(contentDoc)
+                }
+                return contentDoc
+            }
+        })
+
 
         function stub(methodName, proto, functionName) {
             const original = proto[functionName]
@@ -68,6 +113,7 @@
                 reportCanvasCapture(
                     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADEAAAATCAYAAAA5+OUhAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU9TpSKVDmYQdchQneyiIo61CkWoEGqFVh1MXn+hSUOS4uIouBYc/FmsOrg46+rgKgiCPyDODk6KLlLifUmhRYwXHu/jvHsO790HCM0q06yeOKDptplOJqRsblUKvSKAEESMIKIwy5iT5RR86+ueuqnuYjzLv+/PGsgXLAYEJOI4M0ybeIN4ZtM2OO8Ti6ys5InPiSdMuiDxI9dVj984l1wWeKZoZtLzxCKxVOpitYtZ2dSIp4mjeU2nfCHrcZ7zFmetWmfte/IXhgv6yjLXaY0iiUUsQYYEFXVUUIWNGO06KRbSdJ7w8Q+7fplcKrkqYORYQA0aFNcP/ge/Z2sVpya9pHAC6H1xnI8xILQLtBqO833sOK0TIPgMXOkdf60JzH6S3uho0SMgsg1cXHc0dQ+43AGGngzFVFwpSEsoFoH3M/qmHDB4C/SveXNrn+P0AcjQrFI3wMEhMF6i7HWfd/d1z+3fnvb8fgBMkXKX0jDwYQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAAuIwAALiMBeKU/dgAAAAd0SU1FB+gBBxQcIr5MNVMAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAp0lEQVRIx+1XQQ6AIAxrif//cr1oYgi6DRVBbcIBBiNboQOgD2hpVZgwNgQAqXXW7kDCC/AH0Qum/JIUwJ052pmnwjo4bHD4PmRCAYdPSK0sJmREnNu92awFo0lMDsrYkAkejOmTF5ujBcGA8nRfJ7hpTyrUZQ9ADhIAVybU+ZE3JT2dKDJybn6GUXnpkJc2w3nkCEYLGq3/BA31YUUBZKHPimS5lHEG96koK5ZOPtYAAAAASUVORK5CYII=',
                     `stub: ${methodName}`,
+                    doc,
                 )
 
                 return result

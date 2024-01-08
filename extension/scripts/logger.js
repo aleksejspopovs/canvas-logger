@@ -20,6 +20,10 @@ window.addEventListener("message", (event) => {
     const url = document.location.href
     const time = new Date().toJSON()
 
+    if (event.data.frameUrl === url) {
+      delete event.data.frameUrl
+    }
+
     let objects = {}
     objects[`log_${time}_${uuid}`] = {url, time, ...event.data}
     chrome.storage.local.set(objects)

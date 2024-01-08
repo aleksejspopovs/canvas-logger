@@ -53,7 +53,8 @@ const loadEntries = () => {
           let itemElement = document.createElement('li')
 
           let descElement = document.createElement('p')
-          descElement.innerText = `${item.key} on ${item.url} (${item.method || 'toDataURL'})`
+          let frameText = (item.frameUrl !== undefined) ? ` (frame: ${item.frameUrl})` : ''
+          descElement.innerText = `${item.key} on ${item.url}${frameText} (${item.method || 'toDataURL'})`
           itemElement.appendChild(descElement)
 
           if (knownData.hasOwnProperty(item.data)) {
