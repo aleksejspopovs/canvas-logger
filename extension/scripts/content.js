@@ -1,5 +1,5 @@
 (function () {
-    DO_NOT_HOOK_URLS = [
+    const DO_NOT_HOOK_URLS = [
         'https://www.google.com/maps',
     ]
 
