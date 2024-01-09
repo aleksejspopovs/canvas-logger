@@ -104,6 +104,27 @@
             }
         })
 
+        // iframe.contentWindow.document is another way to get to the contentDocument
+        // without triggering the contentDocument getter.
+        // (or you could also directly go for iframe.contentWindow.HTMLCanvasElement
+        // but this hook takes care of that as well)
+        const _IFRAME_CONTENTWINDOW_ORIGINAL_FUNCTION = Object
+            .getOwnPropertyDescriptor(_HTMLIFrameElement.prototype, 'contentWindow')
+            .get
+        Object.defineProperty(_HTMLIFrameElement.prototype, 'contentWindow', {
+            configurable: true,
+            enumerable: true,
+            get() {
+                let contentWin = _IFRAME_CONTENTWINDOW_ORIGINAL_FUNCTION.apply(this)
+                if (!contentWin.document._HAS_CANVAS_HOOKS) {
+                    patchDocument(contentWin.document)
+                }
+                return contentWin
+            }
+        })
+
+        // TODO: you can still bypass this, though, by accessing the frame as
+        // window.frames[0] or window[0], and I don't immediately see how to fix that.
 
         function stub(methodName, proto, functionName) {
             const original = proto[functionName]
