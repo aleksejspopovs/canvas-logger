@@ -116,8 +116,12 @@
             enumerable: true,
             get() {
                 let contentWin = _IFRAME_CONTENTWINDOW_ORIGINAL_FUNCTION.apply(this)
-                if (!contentWin.document._HAS_CANVAS_HOOKS) {
-                    patchDocument(contentWin.document)
+                try {
+                    if (!contentWin.document._HAS_CANVAS_HOOKS) {
+                        patchDocument(contentWin.document)
+                    }
+                } catch {
+
                 }
                 return contentWin
             }
