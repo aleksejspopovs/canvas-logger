@@ -147,9 +147,9 @@
         const _WebGLRenderingContext = doc.createElement('canvas').getContext('webgl').constructor
         const _WebGL2RenderingContext = doc.createElement('canvas').getContext('webgl2').constructor
 
-        const _WEBGL2_READPIXELS_ORIGINAL_FUNCTION = _WebGL2RenderingContext.prototype.readPixels
-        _WebGL2RenderingContext.prototype.readPixels = function (x, y, w, h, ...args) {
-            const result = _WEBGL2_READPIXELS_ORIGINAL_FUNCTION.apply(this, [x, y, w, h].concat(args))
+        const _WEBGL_READPIXELS_ORIGINAL_FUNCTION = _WebGLRenderingContext.prototype.readPixels
+        _WebGLRenderingContext.prototype.readPixels = function (x, y, w, h, ...args) {
+            const result = _WEBGL_READPIXELS_ORIGINAL_FUNCTION.apply(this, [x, y, w, h].concat(args))
 
             // intercepting the pixels we just read and drawing them back onto a temp canvas
             // seems annoying (you have to account for different pixel formats and datatypes,
@@ -157,12 +157,22 @@
             // toDataURL to get the whole canvas, and log the cropping params in case we want
             // to look at those manually.
             const dataUrl = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(this.canvas, [])
+            reportCanvasCapture(dataUrl, `webgl.readPixels(${x}, ${y}, ${w}, ${h})`, doc)
+
+            return result
+        }
+
+        const _WEBGL2_READPIXELS_ORIGINAL_FUNCTION = _WebGL2RenderingContext.prototype.readPixels
+        _WebGL2RenderingContext.prototype.readPixels = function (x, y, w, h, ...args) {
+            const result = _WEBGL2_READPIXELS_ORIGINAL_FUNCTION.apply(this, [x, y, w, h].concat(args))
+
+            const dataUrl = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(this.canvas, [])
             reportCanvasCapture(dataUrl, `webgl2.readPixels(${x}, ${y}, ${w}, ${h})`, doc)
 
             return result
         }
 
-        stub('webgl.readPixels', _WebGLRenderingContext.prototype, 'readPixels')
+        // stub('webgl.readPixels', _WebGLRenderingContext.prototype, 'readPixels')
         stub('webgl.copyTexImage2D', _WebGLRenderingContext.prototype, 'copyTexImage2D')
         stub('webgl.copyTexSubImage2D', _WebGLRenderingContext.prototype, 'copyTexSubImage2D')
         // stub('webgl2.readPixels', _WebGL2RenderingContext.prototype, 'readPixels')
