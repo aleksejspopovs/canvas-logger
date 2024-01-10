@@ -4,8 +4,8 @@
     ]
     const STUB_IMAGE_DATAURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADEAAAATCAYAAAA5+OUhAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU9TpSKVDmYQdchQneyiIo61CkWoEGqFVh1MXn+hSUOS4uIouBYc/FmsOrg46+rgKgiCPyDODk6KLlLifUmhRYwXHu/jvHsO790HCM0q06yeOKDptplOJqRsblUKvSKAEESMIKIwy5iT5RR86+ueuqnuYjzLv+/PGsgXLAYEJOI4M0ybeIN4ZtM2OO8Ti6ys5InPiSdMuiDxI9dVj984l1wWeKZoZtLzxCKxVOpitYtZ2dSIp4mjeU2nfCHrcZ7zFmetWmfte/IXhgv6yjLXaY0iiUUsQYYEFXVUUIWNGO06KRbSdJ7w8Q+7fplcKrkqYORYQA0aFNcP/ge/Z2sVpya9pHAC6H1xnI8xILQLtBqO833sOK0TIPgMXOkdf60JzH6S3uho0SMgsg1cXHc0dQ+43AGGngzFVFwpSEsoFoH3M/qmHDB4C/SveXNrn+P0AcjQrFI3wMEhMF6i7HWfd/d1z+3fnvb8fgBMkXKX0jDwYQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAAuIwAALiMBeKU/dgAAAAd0SU1FB+gBBxQcIr5MNVMAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAp0lEQVRIx+1XQQ6AIAxrif//cr1oYgi6DRVBbcIBBiNboQOgD2hpVZgwNgQAqXXW7kDCC/AH0Qum/JIUwJ052pmnwjo4bHD4PmRCAYdPSK0sJmREnNu92awFo0lMDsrYkAkejOmTF5ujBcGA8nRfJ7hpTyrUZQ9ADhIAVybU+ZE3JT2dKDJybn6GUXnpkJc2w3nkCEYLGq3/BA31YUUBZKHPimS5lHEG96koK5ZOPtYAAAAASUVORK5CYII='
 
-    function reportCanvasCapture(data, method, doc) {
-        console.trace(`🎨 TRACING CANVAS ${method} ACCESS`)
+    function reportCanvasCapture(data, method, doc, canvas) {
+        console.trace(`🎨 TRACING CANVAS ${method} ACCESS, last string = `, canvas._LAST_STRING)
         window.postMessage({
             type: 'CANVAS_CAPTURE_LOG',
             data: data,
@@ -26,7 +26,7 @@
         const _CANVAS_DATAURL_ORIGINAL_FUNCTION = _HTMLCanvasElement.prototype.toDataURL
         _HTMLCanvasElement.prototype.toDataURL = function (...args) {
             let result = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(this, args)
-            reportCanvasCapture(result, 'toDataURL', doc)
+            reportCanvasCapture(result, 'toDataURL', doc, this)
             return result
         }
 
@@ -36,7 +36,7 @@
                 // converting the blob to a data URL
                 let reader = new FileReader()
                 reader.onload = function (event) {
-                    reportCanvasCapture(event.target.result, 'toBlob', doc)
+                    reportCanvasCapture(event.target.result, 'toBlob', doc, this)
                 }
                 reader.readAsDataURL(blob)
 
@@ -60,7 +60,15 @@
 
             const dataUrl = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(this.canvas, [])
 
-            reportCanvasCapture(dataUrl, `2d.getImageData(${sx}, ${sy}, ${sw}, ${sh})`, doc)
+            reportCanvasCapture(dataUrl, `2d.getImageData(${sx}, ${sy}, ${sw}, ${sh})`, doc, this.canvas)
+            return result
+        }
+
+        const _2DCONTEXT_FILLTEXT_ORIGINAL_FUNCTION = _CanvasRenderingContext2D.prototype.fillText
+        _CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
+            let result = _2DCONTEXT_FILLTEXT_ORIGINAL_FUNCTION.apply(this, [text].concat(args))
+            this.canvas._LAST_STRING = text
+            console.log(`🎨 TRACING CANVAS TEXT:`, text, Array.from(text, (x) => x.charCodeAt(0)), args)
             return result
         }
 
@@ -138,7 +146,7 @@
             proto[functionName] = function (...args) {
                 let result = original.apply(this, args)
 
-                reportCanvasCapture(STUB_IMAGE_DATAURL, `stub: ${methodName}`, doc)
+                reportCanvasCapture(STUB_IMAGE_DATAURL, `stub: ${methodName}`, doc, this.canvas)
 
                 return result
             }
@@ -157,7 +165,7 @@
             // toDataURL to get the whole canvas, and log the cropping params in case we want
             // to look at those manually.
             const dataUrl = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(this.canvas, [])
-            reportCanvasCapture(dataUrl, `webgl.readPixels(${x}, ${y}, ${w}, ${h})`, doc)
+            reportCanvasCapture(dataUrl, `webgl.readPixels(${x}, ${y}, ${w}, ${h})`, doc, this.canvas)
 
             return result
         }
@@ -167,7 +175,7 @@
             const result = _WEBGL2_READPIXELS_ORIGINAL_FUNCTION.apply(this, [x, y, w, h].concat(args))
 
             const dataUrl = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(this.canvas, [])
-            reportCanvasCapture(dataUrl, `webgl2.readPixels(${x}, ${y}, ${w}, ${h})`, doc)
+            reportCanvasCapture(dataUrl, `webgl2.readPixels(${x}, ${y}, ${w}, ${h})`, doc, this.canvas)
 
             return result
         }
