@@ -51,12 +51,14 @@
             let result = _2DCONTEXT_IMAGEDATA_ORIGINAL_FUNCTION.apply(this, [sx, sy, sw, sh].concat(args))
 
             // convert ImageData to a data URL
-            let tmpCanvas = doc.createElement('canvas')
-            tmpCanvas.width = sw
-            tmpCanvas.height = sh
-            let tmpContext = tmpCanvas.getContext('2d')
-            tmpContext.putImageData(result, 0, 0)
-            let dataUrl = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(tmpCanvas, [])
+            // let tmpCanvas = doc.createElement('canvas')
+            // tmpCanvas.width = sw
+            // tmpCanvas.height = sh
+            // let tmpContext = tmpCanvas.getContext('2d')
+            // tmpContext.putImageData(result, 0, 0)
+            // let dataUrl = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(tmpCanvas, [])
+
+            const dataUrl = _CANVAS_DATAURL_ORIGINAL_FUNCTION.apply(this.canvas, [])
 
             reportCanvasCapture(dataUrl, `2d.getImageData(${sx}, ${sy}, ${sw}, ${sh})`, doc)
             return result
