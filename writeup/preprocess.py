@@ -15,11 +15,24 @@ class Image:
 		src_hosted = '{}/{}'.format(IMAGE_HOST, self.src)
 		src_htmlsafe = html.escape(src_hosted, quote=True)
 		alt_htmlsafe = html.escape(self.alt, quote=True)
+
+		style = [
+			'background: white',
+			'border: 1px solid',
+			'margin-top: 0px',
+			'margin-bottom: 0px',
+		]
+
+		if '/datadome-1-' in self.src:
+			style.append('width: 150px')
+
+		style_htmlsafe = html.escape('; '.join(style), quote=True)
+
 		return f'''<img
   src="{src_htmlsafe}"
   alt="{alt_htmlsafe}"
   title="{alt_htmlsafe}"
-  style="background: white; border: 1px solid; margin-top: 0px; margin-bottom: 0px;">
+  style="{style_htmlsafe}">
 '''
 
 lines = []
