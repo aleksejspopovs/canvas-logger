@@ -14,7 +14,7 @@ BrowserLeaks.com seems to have been one of the first public implementations of c
 
 The image is not particularly visually striking, but I want to draw your attention to the orange rectangle under the word `<canvas>`. Take a good look at it, appreciate its color, and try to remember it---you're going to see it again.
 
-Interestingly, the current version of BrowserLeaks.com uses a clever trick that attempts to defeat extensions like mine. BrowserLeaks.com creates a sandboxed iframe where JavaScript (including the hooking code from my extension) will not execute, then accesses it from the parent frame to get a `<canvas>` element whose `toDataURL` method has not been hooked. Once you know about it, though, you can [use the same trick](https://github.com/aleksejspopovs/canvas-logger/blob/dad9f37d3718509151d202b214c8f536c70596e8/extension/scripts/content.js#L67-L108) to hook them too. I have not seen any other site use this trick.
+Interestingly, the current version of BrowserLeaks.com uses a clever trick to defeat extensions like mine. It creates a sandboxed iframe where JavaScript (including the hooking code from my extension) will not execute, then accesses it from the parent frame to get a `<canvas>` element whose `toDataURL` method has not been hooked. Once you know about it, though, you can [use the same trick](https://github.com/aleksejspopovs/canvas-logger/blob/dad9f37d3718509151d202b214c8f536c70596e8/extension/scripts/content.js#L67-L108) to hook them too from the extension code running in the parent frame. I have not seen any other site use this trick.
 
 ## ClickCease
 
@@ -102,7 +102,7 @@ I think they're doing something clever with their iframes, because, while my ext
 
 This one's kind of cool-looking, I have to admit. It's a shame it's Cloudflare's.
 
-Turnstile is the only CAPTCHA solution that seems to actually detect that something's wrong when my canvas logging extension is running. All of my challenges fail with "Error: 600010". The code is heavily obfuscated, so I didn't get around to figuring out how they detect it. It's got to be interesting, so maybe that's a task for another day.
+Turnstile is the only CAPTCHA solution that seems to actually detect that something's wrong when my canvas logging extension is running. All of my challenges fail with "Error: 600010". The code is heavily obfuscated, so I didn't get around to figuring out exactly what triggers this. It's got to be interesting, so maybe that's a task for another day.
 
 ## Shape Security
 
