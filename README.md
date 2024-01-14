@@ -1,0 +1,1 @@
+This repo contains some of the source materials I used to explore and write up how different websites/security vendors use Canvas APIs to fingerprint browsers. [Check out the writeup.](https://cohost.org/ejs/post/4175999-visualizing-canvas-f)
